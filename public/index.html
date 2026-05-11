@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <!-- 前后端分离时填写后端根地址，无末尾斜杠，例如 https://api.xxx.com -->
+    <meta name="silas-api-base" content="" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content="Silas Chat — 单用户 AI 聊天" />
+    <meta name="theme-color" content="#e8dfd0" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Silas" />
+    <title>Silas Chat</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icons/icon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&family=Outfit:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles/base.css" />
+    <link rel="stylesheet" href="/styles/themes.css" />
+    <link rel="stylesheet" href="/styles/app.css?v=20260248" />
+  </head>
+  <body>
+    <div id="app-root">
+      <div id="login-screen" class="screen hidden">
+        <div style="flex: 1; display: flex; padding: 24px 16px">
+          <div class="login-panel">
+            <h1>Silas Chat</h1>
+            <p>单用户私密空间。若服务端配置了密码，请输入后进入。</p>
+            <input id="login-password" type="password" autocomplete="current-password" placeholder="访问密码" />
+            <button type="button" class="primary" id="login-submit">进入</button>
+            <p id="login-error" style="color: var(--danger); font-size: 0.82rem; margin-top: 10px; min-height: 1.2em"></p>
+          </div>
+        </div>
+      </div>
+
+      <div id="main-app" class="screen main-shell hidden">
+        <div class="app-header-stack">
+          <header class="app-header app-header-bar">
+            <span class="app-header-spacer" aria-hidden="true"></span>
+            <span id="app-title" class="app-header-title">Silas</span>
+            <button type="button" class="header-icon-btn hidden" id="header-chat-new" aria-label="新对话">＋</button>
+          </header>
+          <p id="app-ai-signature" class="app-ai-signature hidden" role="note"></p>
+        </div>
+
+        <section id="view-chat" class="view view-chat">
+          <div id="chat-inbox" class="chat-inbox">
+            <button type="button" id="chat-memo-entry" class="chat-conv-row chat-memo-entry">
+              <div class="chat-conv-avatar" aria-hidden="true"><span class="avatar chat-memo-entry-icon">📝</span></div>
+              <div class="chat-conv-main">
+                <div class="chat-conv-top">
+                  <span class="chat-conv-title">想让Silas替你记住什么？</span>
+                </div>
+                <span class="chat-memo-entry-sub">与服务端同步 · 换设备同一后端即可见 · 不写入 AI 记忆</span>
+              </div>
+            </button>
+            <div id="chat-conversation-list" class="chat-conversation-list"></div>
+          </div>
+          <div id="chat-memo-pane" class="chat-memo-pane hidden">
+            <div class="chat-thread-hairline" aria-hidden="true"></div>
+            <button type="button" class="chat-memo-back-btn" id="chat-memo-back" aria-label="返回">←</button>
+            <div id="chat-memo-scroll" class="chat-memo-scroll">
+              <h2 class="chat-memo-lead">想让Silas替你记住什么？</h2>
+              <p class="chat-memo-hint">
+                正文保存在服务器数据库（与「我」里的设置同源）；手机与电脑只要访问<strong>同一套部署的后端</strong>（含云服务器）即可同步。不会送进对话模型，也不会进入长期记忆摘要。
+              </p>
+              <label class="visually-hidden" for="chat-memo-body">备忘正文</label>
+              <textarea
+                id="chat-memo-body"
+                class="chat-memo-body"
+                maxlength="20000"
+                rows="12"
+                placeholder="例如：行程、待办、临时记下的事…"
+                spellcheck="false"
+              ></textarea>
+            </div>
+          </div>
+          <div id="chat-thread-pane" class="chat-thread-pane hidden">
+            <div class="chat-thread-hairline" aria-hidden="true"></div>
+            <div class="chat-back-heart-wrap" id="chat-back-heart-wrap">
+              <span class="chat-back-heart-bg" aria-hidden="true"></span>
+              <button type="button" class="chat-back-btn" id="chat-back-inbox" aria-label="返回">←</button>
+            </div>
+            <div id="chat-thread-scroll" class="chat-thread-scroll">
+              <div id="chat-thread" class="chat-thread"></div>
+              <div id="chat-empty" class="empty-hint hidden">还没有消息。在下方输入一句开始聊吧。</div>
+            </div>
+            <div id="memory-digest-float" class="memory-digest-float hidden" role="dialog" aria-labelledby="memory-digest-title">
+              <div class="memory-digest-float-inner">
+                <div id="memory-digest-panel-normal">
+                  <p id="memory-digest-title" class="memory-digest-float-title">跨会话长期记忆</p>
+                  <p id="memory-digest-float-body" class="memory-digest-float-body"></p>
+                  <div class="memory-digest-float-actions">
+                    <button type="button" class="btn" id="memory-digest-dismiss">稍后</button>
+                    <button type="button" class="btn primary" id="memory-digest-confirm">确认生成摘要</button>
+                  </div>
+                </div>
+                <div id="memory-digest-panel-skip" class="hidden">
+                  <p id="memory-digest-skip-title" class="memory-digest-float-title">确认暂不合并？</p>
+                  <p id="memory-digest-skip-body" class="memory-digest-float-body"></p>
+                  <div class="memory-digest-float-actions">
+                    <button type="button" class="btn" id="memory-digest-skip-cancel">返回</button>
+                    <button type="button" class="btn danger" id="memory-digest-skip-confirm">确认放弃</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="composer" id="chat-composer">
+              <textarea id="chat-input" rows="1" placeholder="发送消息…"></textarea>
+              <button type="button" class="send" id="chat-send" aria-label="发送"></button>
+            </div>
+          </div>
+        </section>
+
+        <section id="view-moments" class="view view-moments hidden">
+          <div class="moments-composer">
+            <div class="moments-composer-inner">
+              <div id="moments-me-avatar" aria-hidden="true"></div>
+              <div class="moments-composer-fields">
+                <label class="moments-label" for="moment-draft">以我的身份发布</label>
+                <textarea id="moment-draft" placeholder="分享此刻的想法…"></textarea>
+                <input type="file" id="moment-image-file" class="hidden" accept="image/*" />
+                <div id="moment-image-preview" class="moment-image-preview hidden" aria-live="polite"></div>
+                <div class="moments-toolbar">
+                  <button type="button" class="btn primary" id="moment-post">发布</button>
+                  <button type="button" class="btn" id="moment-image-pick">图片</button>
+                  <button type="button" class="btn" id="moment-ai-publish">Silas 发一条</button>
+                  <button type="button" class="btn" id="moment-refresh">刷新</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="moments-feed" id="moments-list"></div>
+        </section>
+
+        <section id="view-me" class="view hidden">
+          <div class="field field-highlight">
+            <label>头像（对话与朋友圈里显示）</label>
+            <p class="field-hint" style="margin-top: 0">
+              在下方填写<strong>以 https:// 开头的图片地址</strong>，点「保存设置」生效。也可把图上传到图床 / 对象存储后粘贴链接。
+            </p>
+          </div>
+          <div class="field">
+            <label>聊天背景图（对话页）</label>
+            <input type="url" id="set-chat-bg-url" placeholder="https://你的图床或存储/xxx.jpg" autocomplete="off" />
+            <div class="btn-row" style="margin-top: 10px">
+              <button type="button" class="btn primary" id="chat-bg-pick">从相册 / 拍照上传</button>
+            </div>
+            <input type="file" id="chat-bg-file" class="hidden" accept="image/*" />
+            <p class="field-hint">
+              填写可访问的 <code>http(s)://</code> 图片地址，或点按钮从相册上传。设置后对话、朋友圈、「我」都会铺在壁纸毛玻璃之上；也可在服务端环境变量
+              <code>CHAT_BG_IMAGE_URL</code> 设默认图（库中未配置时使用）。
+            </p>
+          </div>
+          <div class="field">
+            <label>我的显示名</label>
+            <input type="text" id="set-user-name" />
+          </div>
+          <div class="field">
+            <label>我的头像 URL（可空）</label>
+            <input type="url" id="set-user-avatar" placeholder="https://..." />
+          </div>
+          <div class="field">
+            <label>AI 显示名</label>
+            <input type="text" id="set-ai-name" />
+          </div>
+          <div class="field">
+            <label>AI 头像 URL（可空）</label>
+            <input type="url" id="set-ai-avatar" placeholder="https://..." />
+          </div>
+          <div class="field">
+            <label>AI 个性签名</label>
+            <input type="text" id="set-ai-signature" maxlength="80" placeholder="一句话简介" autocomplete="off" />
+            <p class="field-hint" style="margin-top: 8px">
+              填写并保存后：对话页标题下方、以及点击对话里 <strong>AI 头像</strong>打开的<strong>资料卡</strong>里都会显示，不会被当作长期记忆发送给模型。
+            </p>
+          </div>
+          <div class="field">
+            <label>人设与回复偏好（写入每次对话的 system）</label>
+            <textarea id="set-persona"></textarea>
+          </div>
+          <div class="field">
+            <label>长期记忆 · 手写（每次对话都会带上，可直接改）</label>
+            <p class="field-hint" style="margin-top: 0">
+              写你希望 Silas 一直记得的事：称呼、习惯、重要约定等。与下方「自动摘要」一起在后台注入模型，不会替代人设全文。
+            </p>
+            <textarea id="set-memory-user-notes" rows="4" placeholder="例如：叫我小名○○；不吃香菜；纪念日是…"></textarea>
+          </div>
+          <div class="field">
+            <label>长期记忆 · 自动摘要（系统在对话后分批合并，也可自己删改）</label>
+            <p class="field-hint" style="margin-top: 0">
+              当<strong>所有会话合计</strong>里、时间较早的旧消息够多时，<strong>对话页会出现小浮窗</strong>，你点「确认生成摘要」后才会调用模型写入这里（不会偷偷跑）。你可随时编辑或清空。
+            </p>
+            <textarea id="set-memory-auto-digest" rows="5" placeholder="（尚无自动摘要时此处为空）"></textarea>
+          </div>
+          <div class="btn-row">
+            <button type="button" class="btn primary" id="settings-save">保存设置</button>
+          </div>
+          <div class="field" style="padding-top: 8px; border-top: 1px solid var(--border-subtle)">
+            <label>页面还是旧版 / 发消息没有弹窗说明？</label>
+            <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0 0 8px; line-height: 1.45">
+              安装过「添加到主屏幕」或 PWA 后，浏览器可能缓存旧脚本。点下面按钮会注销 Service Worker 并整页刷新。
+            </p>
+            <button type="button" class="btn" id="silas-force-update">清除离线缓存并重新加载</button>
+          </div>
+          <div class="field" style="padding-top: 8px; border-top: 1px solid var(--border-subtle)">
+            <label>像原生 App 一样使用</label>
+            <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0 0 10px; line-height: 1.45">
+              从桌面图标打开时，浏览器会隐藏地址栏（独立窗口模式）。Chrome / Edge 可用下方按钮安装；iPhone 请用 Safari
+              打开后点分享 →「添加到主屏幕」。
+            </p>
+            <button type="button" class="btn primary hidden" id="pwa-install">安装到桌面 / 本机</button>
+          </div>
+          <div class="field" style="padding-top: 8px; border-top: 1px solid var(--border-subtle)">
+            <label>连接后端 API（可选）</label>
+            <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0 0 8px; line-height: 1.5">
+              页面与 Node 服务<strong>同一地址打开</strong>时不用改。若前端静态托管在别处，请用编辑器打开
+              <code>index.html</code>，在文件顶部把
+              <code>&lt;meta name="silas-api-base" content="" /&gt;</code>
+              的 <code>content</code> 改成你的后端根地址（不要末尾 <code>/</code>），保存后重新部署或刷新。
+            </p>
+          </div>
+          <p class="empty-hint" style="padding-top: 4px">
+            服务端在项目根目录 <code>.env</code> 配置 <code>OPENAI_API_KEY</code>（对话与朋友圈 AI 互动）；数据库执行
+            <code>supabase/schema.sql</code>。
+          </p>
+        </section>
+
+        <nav class="tabbar" id="tabbar">
+          <button type="button" class="tab active" data-tab="chat">
+            <span class="tab-icon">◇</span>
+            <span>消息</span>
+          </button>
+          <button type="button" class="tab" data-tab="moments">
+            <span class="tab-icon">○</span>
+            <span>朋友圈</span>
+          </button>
+          <button type="button" class="tab" data-tab="me">
+            <span class="tab-icon">◎</span>
+            <span>我</span>
+          </button>
+        </nav>
+      </div>
+    </div>
+    <div id="toast" class="toast hidden"></div>
+    <div id="moment-success-sheet" class="moment-success-sheet hidden" role="dialog" aria-modal="true" aria-labelledby="moment-success-title">
+      <button type="button" class="moment-success-backdrop" id="moment-success-backdrop" aria-label="关闭"></button>
+      <div class="moment-success-card">
+        <div class="moment-success-icon" aria-hidden="true">✦</div>
+        <h3 class="moment-success-title" id="moment-success-title">动态已发布</h3>
+        <p class="moment-success-lead">你的分享已出现在朋友圈里</p>
+        <p class="moment-success-hint">你的宝宝Silas大约在十分钟后会来点赞、评论</p>
+        <button type="button" class="btn primary moment-success-ok" id="moment-success-ok">好的</button>
+      </div>
+    </div>
+    <div id="ai-profile-sheet" class="error-sheet hidden" role="dialog" aria-modal="true" aria-labelledby="ai-profile-title">
+      <button type="button" class="error-sheet-backdrop" id="ai-profile-backdrop" aria-label="关闭"></button>
+      <div class="error-sheet-card ai-profile-card">
+        <h3 class="error-sheet-title" id="ai-profile-title">Ta 的资料</h3>
+        <div id="ai-profile-body" class="ai-profile-body"></div>
+        <button type="button" class="btn primary" id="ai-profile-go-moments">看 Ta 的朋友圈</button>
+        <button type="button" class="btn" id="ai-profile-close">关闭</button>
+      </div>
+    </div>
+    <div id="error-sheet" class="error-sheet hidden" role="dialog" aria-modal="true" aria-labelledby="error-sheet-title">
+      <button type="button" class="error-sheet-backdrop" id="error-sheet-backdrop" aria-label="关闭"></button>
+      <div class="error-sheet-card">
+        <h3 class="error-sheet-title" id="error-sheet-title">请求失败</h3>
+        <p class="error-sheet-hint">请把下面<strong>整段文字</strong>复制下来（手机：长按灰色框 → 全选/复制）。也可在电脑按 F12 → Console 查看。</p>
+        <pre class="error-sheet-body" id="error-sheet-text"></pre>
+        <button type="button" class="btn primary" id="error-sheet-close">关闭</button>
+      </div>
+    </div>
+    <script type="module" src="/js/app.js?v=20260247"></script>
+  </body>
+</html>

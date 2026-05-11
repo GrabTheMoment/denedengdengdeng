@@ -1,0 +1,4 @@
+/** 默认会话（迁移后历史消息均归此 id） */
+const DEFAULT_CONVERSATION_ID = '00000000-0000-4000-8000-000000000002';
+
+module.exports = { DEFAULT_CONVERSATION_ID };
