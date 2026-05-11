@@ -51,9 +51,9 @@ if [ ! -f "$APP_DIR/.env" ]; then
     echo "⚙️  创建 .env 文件..."
     cat > $APP_DIR/.env << 'EOF'
 PORT=3000
-SUPABASE_URL=https://eiemscirhjupatfngmfq.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=sb_secret_***REDACTED***
-OPENAI_API_KEY=sk-proj-***REDACTED***
+SUPABASE_URL=https://your_supabase_url.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_here
+OPENAI_API_KEY=your_openai_api_key_here
 OPENAI_MODEL=gpt-4o-mini
 CHAT_BG_STORAGE_BUCKET=touxiang
 SILAS_PROACTIVE_ENABLED=1
